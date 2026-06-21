@@ -1,10 +1,13 @@
 import re
+import logging
 
 from app.api.schemas import SearchRequest
 from app.domain.models import SearchResult, SearchSnippet
 from app.ingestion.repository import DocumentRepository
 from app.search.chunking import chunk_markdown
 from app.search.vector_store import VectorStore
+
+logger = logging.getLogger(__name__)
 
 MIN_QUERY_TOKEN_LENGTH = 3
 QUERY_STOP_WORDS = {
@@ -34,6 +37,7 @@ class SearchService:
         try:
             vector_results = await self._vector_search(request)
         except Exception:
+            logger.exception("Vector search failed; falling back to keyword search")
             vector_results = []
 
         if vector_results:

@@ -63,12 +63,12 @@ class VectorStore:
     async def search(self, query: str, limit: int) -> list[tuple[UUID, float, SearchSnippet]]:
         self._ensure_collection()
         vector = await self.embedding_client.embed(query)
-        results = self.client.search(
+        results = self.client.query_points(
             collection_name=self.settings.qdrant_collection,
-            query_vector=vector,
+            query=vector,
             limit=limit,
             with_payload=True,
-        )
+        ).points
 
         matches: list[tuple[UUID, float, SearchSnippet]] = []
         for point in results:
