@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     app_env: str = "local"
     cors_origins: str = "*"
     openwebui_web_search_api_key: str = ""
+    openwebui_loader_max_chars: int = 20000
 
     postgres_host: str = "postgres"
     postgres_port: int = 5432
