@@ -57,6 +57,11 @@ export async function listDocuments(): Promise<DocumentListItem[]> {
   return response.data;
 }
 
+export async function getDocument(documentId: string): Promise<DocumentListItem> {
+  const response = await api.get<DocumentListItem>(`/documents/${documentId}`);
+  return response.data;
+}
+
 export async function getDocumentMarkdown(documentId: string): Promise<string> {
   const response = await api.get<string>(`/documents/${documentId}/markdown`);
   return response.data;

@@ -47,6 +47,25 @@ async def list_documents(
     ]
 
 
+@router.get("/{document_id}", response_model=DocumentListItem)
+async def get_document(
+    document_id: UUID,
+    repository: InMemoryDocumentRepository = Depends(get_document_repository),
+) -> DocumentListItem:
+    document = repository.get(document_id)
+    if document is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+
+    return DocumentListItem(
+        id=document.id,
+        title=document.title,
+        original_filename=document.original_filename,
+        mime_type=document.mime_type,
+        status=document.status,
+        processing_strategy=document.processing_strategy,
+    )
+
+
 @router.get("/{document_id}/markdown", response_model=str)
 async def get_document_markdown(
     document_id: UUID,
