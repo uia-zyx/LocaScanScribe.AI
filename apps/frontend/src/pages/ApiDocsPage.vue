@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 
-const apiBaseUrl = 'http://localhost:8000';
-const frontendBaseUrl = 'http://localhost:3000';
+const frontendBaseUrl = window.location.origin;
+const apiBaseUrl = computed(() => {
+  const { hostname, protocol } = window.location;
+  return `${protocol}//${hostname}:8000`;
+});
 const openWebUiApiKey = 'locascan-openwebui-local-key';
 </script>
 
@@ -91,7 +95,7 @@ const openWebUiApiKey = 'locascan-openwebui-local-key';
             <h3>{{ t('apiDocs.contract.searchResponse') }}</h3>
             <pre><code>[
   {
-    "link": "http://localhost:3000/documents/{id}",
+    "link": "{{ frontendBaseUrl }}/documents/{id}",
     "title": "Document title",
     "snippet": "Matching Markdown fragment"
   }
@@ -101,7 +105,7 @@ const openWebUiApiKey = 'locascan-openwebui-local-key';
             <h3>{{ t('apiDocs.contract.loaderRequest') }}</h3>
             <pre><code>{
   "urls": [
-    "http://localhost:3000/documents/{id}"
+    "{{ frontendBaseUrl }}/documents/{id}"
   ]
 }</code></pre>
           </div>
@@ -111,7 +115,7 @@ const openWebUiApiKey = 'locascan-openwebui-local-key';
   {
     "page_content": "# Recognized Markdown",
     "metadata": {
-      "source": "http://localhost:3000/documents/{id}",
+      "source": "{{ frontendBaseUrl }}/documents/{id}",
       "title": "Document title"
     }
   }

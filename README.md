@@ -106,13 +106,13 @@ Images go directly to OCR. Office and text formats go through the parser path.
 
 ### Open WebUI Integration
 
-Set Web Search Engine to `external` and use:
+Set Web Search Engine to `external` and use the same host that serves the backend:
 
-- External Search URL: `http://localhost:8000/api/openwebui/web-search`
-- External Loader URL: `http://localhost:8000/api/openwebui/web-loader`
+- External Search URL: `http://<backend-host>:8000/api/openwebui/web-search`
+- External Loader URL: `http://<backend-host>:8000/api/openwebui/web-loader`
 - External Search API Key: value of `OPENWEBUI_WEB_SEARCH_API_KEY`
 
-For snippet-based results, enable bypass embedding and retrieval and bypass web loader in Open WebUI. For full recognized Markdown, configure the external loader URL and keep web loader bypass disabled.
+Returned document links are generated from the incoming request host or `Origin` header. For snippet-based results, enable bypass embedding and retrieval and bypass web loader in Open WebUI. For full recognized Markdown, configure the external loader URL and keep web loader bypass disabled.
 
 ---
 
@@ -216,11 +216,11 @@ docker compose -f deploy/docker-compose.yml up -d --build
 
 ### Интеграция Open WebUI
 
-Установите Web Search Engine в `external` и используйте:
+Установите Web Search Engine в `external` и используйте тот же host, на котором доступен backend:
 
-- External Search URL: `http://localhost:8000/api/openwebui/web-search`
-- External Loader URL: `http://localhost:8000/api/openwebui/web-loader`
+- External Search URL: `http://<backend-host>:8000/api/openwebui/web-search`
+- External Loader URL: `http://<backend-host>:8000/api/openwebui/web-loader`
 - External Search API Key: значение `OPENWEBUI_WEB_SEARCH_API_KEY`
 
-Для быстрых результатов по snippets включите bypass embedding and retrieval и bypass web loader в Open WebUI. Для полного распознанного Markdown настройте external loader URL и отключите bypass web loader.
+Ссылки на документы генерируются от host входящего запроса или `Origin` header. Для быстрых результатов по snippets включите bypass embedding and retrieval и bypass web loader в Open WebUI. Для полного распознанного Markdown настройте external loader URL и отключите bypass web loader.
 

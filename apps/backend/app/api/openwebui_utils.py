@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, Request, status
 
 from app.core.settings import Settings
 
@@ -28,8 +28,21 @@ def validate_openwebui_key(
     )
 
 
-def document_frontend_url(settings: Settings, document_id: UUID) -> str:
-    return f"{settings.frontend_base_url.rstrip('/')}/documents/{document_id}"
+def request_base_url(request: Request) -> str:
+    origin = request.headers.get("origin")
+    if origin:
+        return origin.rstrip("/")
+
+    forwarded_proto = request.headers.get("x-forwarded-proto")
+    forwarded_host = request.headers.get("x-forwarded-host")
+    if forwarded_proto and forwarded_host:
+        return f"{forwarded_proto}://{forwarded_host}".rstrip("/")
+
+    return str(request.base_url).rstrip("/")
+
+
+def document_frontend_url(base_url: str, document_id: UUID) -> str:
+    return f"{base_url.rstrip('/')}/documents/{document_id}"
 
 
 def document_id_from_url(url: str) -> UUID | None:

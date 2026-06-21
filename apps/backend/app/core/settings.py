@@ -1,6 +1,6 @@
+import json
 from functools import lru_cache
 
-from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -9,8 +9,7 @@ class Settings(BaseSettings):
 
     app_name: str = "LocaScanScribe.AI"
     app_env: str = "local"
-    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
-    frontend_base_url: str = "http://localhost:3000"
+    cors_origins: str = "*"
     openwebui_web_search_api_key: str = ""
 
     postgres_host: str = "postgres"
@@ -49,6 +48,18 @@ class Settings(BaseSettings):
             f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        value = self.cors_origins.strip()
+        if value == "*":
+            return ["*"]
+
+        if value.startswith("["):
+            parsed = json.loads(value)
+            return [str(origin) for origin in parsed]
+
+        return [origin.strip() for origin in value.split(",") if origin.strip()]
 
 
 @lru_cache

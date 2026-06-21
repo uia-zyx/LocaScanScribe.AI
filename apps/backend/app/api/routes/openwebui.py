@@ -1,11 +1,12 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends, Header, Request
 
 from app.api.deps import get_document_repository, get_search_service
 from app.api.openwebui_utils import (
     document_frontend_url,
     document_id_from_url,
+    request_base_url,
     validate_openwebui_key,
 )
 from app.api.schemas import (
@@ -25,6 +26,7 @@ router = APIRouter(prefix="/openwebui", tags=["openwebui"])
 @router.post("/web-search", response_model=list[OpenWebUISearchResult])
 async def openwebui_web_search(
     request: OpenWebUISearchRequest,
+    http_request: Request,
     settings: Annotated[Settings, Depends(get_settings)],
     search_service: Annotated[SearchService, Depends(get_search_service)],
     authorization: Annotated[str | None, Header()] = None,
@@ -32,10 +34,11 @@ async def openwebui_web_search(
 ) -> list[OpenWebUISearchResult]:
     validate_openwebui_key(settings, authorization, x_api_key)
 
+    base_url = request_base_url(http_request)
     results = await search_service.search(SearchRequest(query=request.query, limit=request.count))
     return [
         OpenWebUISearchResult(
-            link=document_frontend_url(settings, result.document_id),
+            link=document_frontend_url(base_url, result.document_id),
             title=result.title,
             snippet="\n\n".join(snippet.phrase for snippet in result.snippets),
         )
@@ -46,6 +49,7 @@ async def openwebui_web_search(
 @router.post("/web-loader", response_model=list[OpenWebUILoaderResult])
 async def openwebui_web_loader(
     request: OpenWebUILoaderRequest,
+    http_request: Request,
     settings: Annotated[Settings, Depends(get_settings)],
     repository: Annotated[DocumentRepository, Depends(get_document_repository)],
     authorization: Annotated[str | None, Header()] = None,
@@ -53,6 +57,7 @@ async def openwebui_web_loader(
 ) -> list[OpenWebUILoaderResult]:
     validate_openwebui_key(settings, authorization, x_api_key)
 
+    base_url = request_base_url(http_request)
     loaded: list[OpenWebUILoaderResult] = []
     for url in request.urls:
         document_id = document_id_from_url(url)
@@ -67,7 +72,7 @@ async def openwebui_web_loader(
             OpenWebUILoaderResult(
                 page_content=document.markdown,
                 metadata={
-                    "source": document_frontend_url(settings, document.id),
+                    "source": document_frontend_url(base_url, document.id),
                     "title": document.title,
                     "document_id": str(document.id),
                     "original_filename": document.original_filename,

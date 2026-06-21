@@ -8,6 +8,7 @@ from app.db.session import init_database
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    cors_origins = settings.cors_origin_list
     app = FastAPI(title=settings.app_name)
 
     @app.on_event("startup")
@@ -16,8 +17,8 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
+        allow_origins=cors_origins,
+        allow_credentials="*" not in cors_origins,
         allow_methods=["*"],
         allow_headers=["*"],
     )
