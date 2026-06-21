@@ -3,7 +3,7 @@ import MarkdownIt from 'markdown-it';
 import Button from 'primevue/button';
 import ProgressSpinner from 'primevue/progressspinner';
 import { computed } from 'vue';
-import { onMounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 
@@ -22,10 +22,15 @@ const documentId = computed(() => String(route.params.id));
 const document = ref<DocumentListItem | null>(null);
 const markdown = ref('');
 const loading = ref(true);
+const error = ref('');
+let pollTimer: number | undefined;
 const originalUrl = computed(() => getOriginalDocumentUrl(documentId.value));
 const originalFilename = computed(() => document.value?.original_filename ?? 'document');
 const recognizedUrl = computed(() => getRecognizedDocumentUrl(documentId.value));
 const recognizedFilename = computed(() => getRecognizedFilename(originalFilename.value));
+const isIndexed = computed(() => document.value?.status === 'indexed');
+const isProcessing = computed(() => document.value?.status === 'processing');
+const isFailed = computed(() => document.value?.status === 'failed');
 const markdownRenderer = new MarkdownIt({
   breaks: true,
   html: false,
@@ -33,21 +38,53 @@ const markdownRenderer = new MarkdownIt({
 });
 const renderedMarkdown = computed(() => markdownRenderer.render(markdown.value));
 
-onMounted(async () => {
-  const [documentMetadata, documentMarkdown] = await Promise.all([
-    getDocument(documentId.value),
-    getDocumentMarkdown(documentId.value),
-  ]);
+async function loadDocument() {
+  try {
+    const documentMetadata = await getDocument(documentId.value);
+    document.value = documentMetadata;
 
-  document.value = documentMetadata;
-  markdown.value = documentMarkdown;
-  loading.value = false;
+    if (documentMetadata.status === 'indexed' || documentMetadata.status === 'failed') {
+      markdown.value = await getDocumentMarkdown(documentId.value);
+      stopPolling();
+    }
+  } catch (requestError) {
+    error.value = requestError instanceof Error ? requestError.message : t('document.loadFailed');
+    stopPolling();
+  } finally {
+    loading.value = false;
+  }
+}
+
+function startPolling() {
+  stopPolling();
+  pollTimer = window.setInterval(() => {
+    void loadDocument();
+  }, 3000);
+}
+
+function stopPolling() {
+  if (pollTimer !== undefined) {
+    window.clearInterval(pollTimer);
+    pollTimer = undefined;
+  }
+}
+
+onMounted(async () => {
+  await loadDocument();
+  if (document.value?.status === 'processing') {
+    startPolling();
+  }
 });
+
+onUnmounted(stopPolling);
 </script>
 
 <template>
   <main class="document-page">
     <ProgressSpinner v-if="loading" />
+    <section v-else-if="error" class="error-state">
+      {{ error }}
+    </section>
     <section v-else>
       <div class="document-actions">
         <h1>{{ t('document.recognized') }}</h1>
@@ -60,7 +97,7 @@ onMounted(async () => {
               rounded
             />
           </a>
-          <a :href="recognizedUrl" :download="recognizedFilename">
+          <a v-if="isIndexed" :href="recognizedUrl" :download="recognizedFilename">
             <Button
               :aria-label="t('document.downloadRecognized')"
               :title="t('document.downloadRecognized')"
@@ -71,7 +108,16 @@ onMounted(async () => {
         </div>
       </div>
 
-      <article class="markdown-reader" v-html="renderedMarkdown"></article>
+      <section v-if="isProcessing" class="loading-state">
+        <ProgressSpinner />
+        <p>{{ t('document.processing') }}</p>
+      </section>
+
+      <section v-else-if="isFailed" class="error-state">
+        {{ t('document.processingFailed') }}
+      </section>
+
+      <article v-else class="markdown-reader" v-html="renderedMarkdown"></article>
     </section>
   </main>
 </template>

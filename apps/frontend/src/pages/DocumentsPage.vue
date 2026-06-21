@@ -174,6 +174,7 @@ onMounted(loadDocuments);
             />
           </a>
           <a
+            v-if="document.status === 'indexed'"
             :href="getRecognizedDocumentUrl(document.id)"
             :download="getRecognizedFilename(document.original_filename)"
           >

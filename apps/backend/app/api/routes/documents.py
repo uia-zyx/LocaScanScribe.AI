@@ -117,7 +117,7 @@ async def get_document_markdown(
     if document is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
 
-    return document.markdown or ""
+    return document.markdown or _pending_markdown(document.original_filename, document.status)
 
 
 @router.get("/{document_id}/recognized")
@@ -131,7 +131,9 @@ async def get_recognized_document(
 
     filename = _recognized_filename(document.original_filename)
     return Response(
-        content=(document.markdown or "").encode("utf-8"),
+        content=(document.markdown or _pending_markdown(document.original_filename, document.status)).encode(
+            "utf-8"
+        ),
         media_type="text/markdown; charset=utf-8",
         headers={
             "Content-Disposition": _content_disposition(filename),
@@ -170,4 +172,8 @@ def _recognized_filename(filename: str) -> str:
     path = Path(filename)
     stem = path.stem or "document"
     return f"{stem}.recognized.md"
+
+
+def _pending_markdown(filename: str, status: str) -> str:
+    return f"# {filename}\n\n_Document OCR status: {status}._"
 

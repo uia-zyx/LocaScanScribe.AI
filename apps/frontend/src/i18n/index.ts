@@ -75,6 +75,9 @@ export const messages = {
       recognized: 'Recognized Document',
       downloadOriginal: 'Download original',
       downloadRecognized: 'Download recognized Markdown',
+      processing: 'OCR is still processing this document. The page will update automatically.',
+      processingFailed: 'OCR processing failed for this document.',
+      loadFailed: 'Failed to load document',
     },
     errors: {
       searchFailed: 'Search failed',
@@ -150,6 +153,9 @@ export const messages = {
       recognized: 'Распознанный документ',
       downloadOriginal: 'Скачать оригинал',
       downloadRecognized: 'Скачать распознанный Markdown',
+      processing: 'OCR ещё обрабатывает этот документ. Страница обновится автоматически.',
+      processingFailed: 'OCR обработка этого документа не удалась.',
+      loadFailed: 'Не удалось загрузить документ',
     },
     errors: {
       searchFailed: 'Поиск не выполнен',

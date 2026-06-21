@@ -27,6 +27,9 @@ class ParserRegistry:
         return await self._parse_with_markitdown(file, ProcessingStrategy.parser)
 
     async def _parse_with_best_available_scanner(self, file: StoredFile) -> ParsedDocument:
+        if self._is_pdf(file):
+            return await self._parse_with_ocr_model(file, strategy=ProcessingStrategy.scanner_ocr)
+
         parsed = await self._parse_with_markitdown(file, ProcessingStrategy.scanner_ocr)
         if self._has_meaningful_content(parsed.markdown):
             return parsed
@@ -77,19 +80,29 @@ class ParserRegistry:
             return result.text_content
 
     def _ocr_pdf_pages(self, file: StoredFile) -> str:
-        document = fitz.open(stream=file.content, filetype="pdf")
-        pages: list[str] = []
+        with fitz.open(stream=file.content, filetype="pdf") as document:
+            pages: list[str] = []
 
-        for page_index in range(document.page_count):
-            page = document.load_page(page_index)
-            pixmap = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
-            image_bytes = pixmap.tobytes("png")
-            page_markdown = asyncio.run(
-                self._ocr_image_bytes(image_bytes, "image/png", f"{file.filename} page {page_index + 1}")
-            )
-            pages.append(f"## Page {page_index + 1}\n\n{page_markdown.strip()}")
+            for page_index in range(document.page_count):
+                image_bytes = self._render_pdf_page_to_png(document, page_index)
+                page_markdown = asyncio.run(
+                    self._ocr_image_bytes(
+                        image_bytes,
+                        "image/png",
+                        f"{file.filename} page {page_index + 1}",
+                    )
+                )
+                page_text = page_markdown.strip()
+                if not page_text:
+                    page_text = "_No text could be recognized on this page._"
+                pages.append(f"## Page {page_index + 1}\n\n{page_text}")
 
         return "\n\n".join(pages)
+
+    def _render_pdf_page_to_png(self, document: fitz.Document, page_index: int) -> bytes:
+        page = document.load_page(page_index)
+        pixmap = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
+        return pixmap.tobytes("png")
 
     async def _ocr_image_bytes(self, content: bytes, mime_type: str, title: str) -> str:
         image_base64 = base64.b64encode(content).decode("ascii")
@@ -116,7 +129,7 @@ class ParserRegistry:
             "max_tokens": 4096,
         }
 
-        async with httpx.AsyncClient(timeout=180) as client:
+        async with httpx.AsyncClient(timeout=600) as client:
             response = await client.post(
                 f"{self.settings.llama_ocr_base_url}/chat/completions",
                 json=payload,
@@ -124,7 +137,10 @@ class ParserRegistry:
             response.raise_for_status()
             data = response.json()
 
-        content = data["choices"][0]["message"]["content"]
+        content = data["choices"][0]["message"]["content"].strip()
+        if not content:
+            return "_No text could be recognized in this image._"
+
         return f"# {title}\n\n{content}" if not content.lstrip().startswith("#") else content
 
     def _decode_text(self, content: bytes) -> str:
