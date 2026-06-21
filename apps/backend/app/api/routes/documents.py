@@ -22,7 +22,7 @@ from app.api.deps import (
     get_vector_store,
 )
 from app.api.schemas import DocumentListItem, DocumentUpdateRequest, DocumentUploadResponse
-from app.domain.models import ProcessingStrategy
+from app.domain.models import Document, DocumentStatus, ProcessingStrategy
 from app.ingestion.repository import DocumentRepository
 from app.ingestion.service import IngestionService
 from app.jobs.queue import DocumentJobQueue
@@ -136,6 +136,40 @@ async def delete_document(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+@router.post(
+    "/{document_id}/retry",
+    response_model=DocumentListItem,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def retry_document_processing(
+    document_id: UUID,
+    background_tasks: BackgroundTasks,
+    repository: Annotated[DocumentRepository, Depends(get_document_repository)],
+    service: Annotated[IngestionService, Depends(get_ingestion_service)],
+    job_queue: Annotated[DocumentJobQueue, Depends(get_document_job_queue)],
+    vector_store: Annotated[VectorStore, Depends(get_vector_store)],
+) -> DocumentListItem:
+    document = repository.get(document_id, include_content=False)
+    if document is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+
+    try:
+        vector_store.delete_document(document.id)
+    except Exception:
+        pass
+
+    document.status = DocumentStatus.processing
+    document.markdown = None
+    repository.save(document)
+
+    try:
+        job_queue.enqueue_processing(document.id)
+    except Exception:
+        background_tasks.add_task(service.process_document, document.id)
+
+    return _document_list_item(document)
+
+
 @router.get("/{document_id}/markdown", response_model=str)
 async def get_document_markdown(
     document_id: UUID,
@@ -203,4 +237,15 @@ def _recognized_filename(filename: str) -> str:
 
 def _pending_markdown(filename: str, status: str) -> str:
     return f"# {filename}\n\n_Document OCR status: {status}._"
+
+
+def _document_list_item(document: Document) -> DocumentListItem:
+    return DocumentListItem(
+        id=document.id,
+        title=document.title,
+        original_filename=document.original_filename,
+        mime_type=document.mime_type,
+        status=document.status,
+        processing_strategy=document.processing_strategy,
+    )
 

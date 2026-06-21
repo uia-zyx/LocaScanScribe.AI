@@ -103,6 +103,11 @@ export async function deleteDocument(documentId: string): Promise<void> {
   await api.delete(`/documents/${documentId}`);
 }
 
+export async function retryDocumentProcessing(documentId: string): Promise<DocumentListItem> {
+  const response = await api.post<DocumentListItem>(`/documents/${documentId}/retry`);
+  return response.data;
+}
+
 export async function getDocumentMarkdown(documentId: string): Promise<string> {
   const response = await api.get<string>(`/documents/${documentId}/markdown`);
   return response.data;

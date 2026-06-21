@@ -2,6 +2,7 @@
 import { MdPreview } from 'md-editor-v3';
 import Button from 'primevue/button';
 import ProgressSpinner from 'primevue/progressspinner';
+import VirtualScroller from 'primevue/virtualscroller';
 import { computed } from 'vue';
 import { onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -13,6 +14,7 @@ import {
   getOriginalDocumentUrl,
   getRecognizedDocumentUrl,
   getRecognizedFilename,
+  retryDocumentProcessing,
   type DocumentListItem,
 } from '../services/api';
 import { useTheme } from '../theme';
@@ -25,6 +27,7 @@ const document = ref<DocumentListItem | null>(null);
 const markdown = ref('');
 const loading = ref(true);
 const error = ref('');
+const retrying = ref(false);
 let pollTimer: number | undefined;
 const originalUrl = computed(() => getOriginalDocumentUrl(documentId.value));
 const originalFilename = computed(() => document.value?.original_filename ?? 'document');
@@ -33,6 +36,7 @@ const recognizedFilename = computed(() => getRecognizedFilename(originalFilename
 const isIndexed = computed(() => document.value?.status === 'indexed');
 const isProcessing = computed(() => document.value?.status === 'processing');
 const isFailed = computed(() => document.value?.status === 'failed');
+const markdownPreviewBlocks = computed(() => createMarkdownPreviewBlocks(markdown.value));
 
 async function loadDocument() {
   try {
@@ -65,6 +69,20 @@ function stopPolling() {
   }
 }
 
+async function retryProcessing() {
+  try {
+    retrying.value = true;
+    error.value = '';
+    markdown.value = '';
+    document.value = await retryDocumentProcessing(documentId.value);
+    startPolling();
+  } catch (requestError) {
+    error.value = requestError instanceof Error ? requestError.message : t('document.retryFailed');
+  } finally {
+    retrying.value = false;
+  }
+}
+
 onMounted(async () => {
   await loadDocument();
   if (document.value?.status === 'processing') {
@@ -73,6 +91,67 @@ onMounted(async () => {
 });
 
 onUnmounted(stopPolling);
+
+interface MarkdownPreviewBlock {
+  id: string;
+  markdown: string;
+}
+
+function createMarkdownPreviewBlocks(source: string): MarkdownPreviewBlock[] {
+  const normalized = source.trim();
+  if (!normalized) {
+    return [];
+  }
+
+  const pageSections = normalized.split(/(?=^## Page \d+\b)/m).filter(Boolean);
+  const sections = pageSections.length > 1 ? pageSections : [normalized];
+
+  return sections.flatMap((section, sectionIndex) =>
+    splitMarkdownSection(section, sectionIndex).map((markdown, chunkIndex) => ({
+      id: `${sectionIndex}-${chunkIndex}`,
+      markdown,
+    })),
+  );
+}
+
+function splitMarkdownSection(section: string, sectionIndex: number): string[] {
+  const targetSize = 2600;
+  const headingMatch = section.match(/^(#{1,6}\s.+)$/m);
+  const heading = headingMatch?.[1] ?? '';
+  const paragraphs = section
+    .split(/\n{2,}/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const chunks: string[] = [];
+  let buffer: string[] = [];
+  let bufferSize = 0;
+
+  for (const paragraph of paragraphs) {
+    if (buffer.length > 0 && bufferSize + paragraph.length > targetSize) {
+      chunks.push(withRepeatedHeading(buffer, heading, chunks.length));
+      buffer = [];
+      bufferSize = 0;
+    }
+
+    buffer.push(paragraph);
+    bufferSize += paragraph.length;
+  }
+
+  if (buffer.length > 0) {
+    chunks.push(withRepeatedHeading(buffer, heading, chunks.length));
+  }
+
+  return chunks.length > 0 ? chunks : [`## Section ${sectionIndex + 1}\n\n${section}`];
+}
+
+function withRepeatedHeading(parts: string[], heading: string, chunkIndex: number): string {
+  if (!heading || chunkIndex === 0 || parts[0] === heading) {
+    return parts.join('\n\n');
+  }
+
+  return `${heading}\n\n${parts.join('\n\n')}`;
+}
 </script>
 
 <template>
@@ -110,17 +189,31 @@ onUnmounted(stopPolling);
       </section>
 
       <section v-else-if="isFailed" class="error-state">
-        {{ t('document.processingFailed') }}
+        <p>{{ t('document.processingFailed') }}</p>
+        <Button
+          :label="t('document.retryProcessing')"
+          :loading="retrying"
+          icon="pi pi-refresh"
+          @click="retryProcessing"
+        />
       </section>
 
-      <MdPreview
+      <VirtualScroller
         v-else
-        :id="`document-preview-${documentId}`"
-        class="markdown-reader"
-        :model-value="markdown"
-        preview-theme="github"
-        :theme="markdownPreviewTheme"
-      />
+        class="markdown-reader virtual-document-preview"
+        :items="markdownPreviewBlocks"
+        :item-size="620"
+      >
+        <template #item="{ item }">
+          <MdPreview
+            :id="`document-preview-${documentId}-${item.id}`"
+            class="virtual-markdown-block"
+            :model-value="item.markdown"
+            preview-theme="github"
+            :theme="markdownPreviewTheme"
+          />
+        </template>
+      </VirtualScroller>
     </section>
   </main>
 </template>

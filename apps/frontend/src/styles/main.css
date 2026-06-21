@@ -508,6 +508,24 @@ select {
   padding: 1.5rem;
 }
 
+.virtual-document-preview {
+  height: min(76vh, 920px);
+  padding: 0.75rem;
+}
+
+.virtual-markdown-block {
+  background: transparent;
+  border-bottom: 1px solid var(--color-border);
+  min-height: 560px;
+  padding: 0.75rem 0.75rem 1.25rem;
+}
+
+.virtual-markdown-block .md-editor-preview {
+  background: transparent;
+  color: var(--color-text);
+  padding: 0;
+}
+
 .markdown-reader h1,
 .markdown-reader h2,
 .markdown-reader h3 {

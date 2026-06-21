@@ -82,6 +82,8 @@ export const messages = {
       downloadRecognized: 'Download recognized Markdown',
       processing: 'OCR is still processing this document. The page will update automatically.',
       processingFailed: 'OCR processing failed for this document.',
+      retryProcessing: 'Retry OCR processing',
+      retryFailed: 'Failed to retry OCR processing',
       loadFailed: 'Failed to load document',
     },
     apiDocs: {
@@ -199,6 +201,8 @@ export const messages = {
       downloadRecognized: 'Скачать распознанный Markdown',
       processing: 'OCR ещё обрабатывает этот документ. Страница обновится автоматически.',
       processingFailed: 'OCR обработка этого документа не удалась.',
+      retryProcessing: 'Повторить OCR обработку',
+      retryFailed: 'Не удалось повторно запустить OCR обработку',
       loadFailed: 'Не удалось загрузить документ',
     },
     apiDocs: {
