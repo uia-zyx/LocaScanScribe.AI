@@ -15,12 +15,15 @@ def main() -> None:
     logger.info("Document worker started")
 
     while True:
-        document_id = queue.dequeue_processing()
-        if document_id is None:
-            continue
+        try:
+            document_id = queue.dequeue_processing()
+            if document_id is None:
+                continue
 
-        logger.info("Processing document %s", document_id)
-        asyncio.run(service.process_document(document_id))
+            logger.info("Processing document %s", document_id)
+            asyncio.run(service.process_document(document_id))
+        except Exception:
+            logger.exception("Document worker loop failed; continuing")
 
 
 if __name__ == "__main__":

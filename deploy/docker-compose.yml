@@ -20,6 +20,7 @@ services:
     build:
       context: ../apps/backend
     command: ["python", "-m", "app.worker"]
+    restart: unless-stopped
     env_file:
       - ../.env.example
       - path: ../.env
