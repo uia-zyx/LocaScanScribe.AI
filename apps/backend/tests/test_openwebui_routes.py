@@ -26,13 +26,13 @@ def test_document_id_from_frontend_url() -> None:
     assert parsed_id == document_id
 
 
-def test_request_base_url_prefers_origin_header() -> None:
+def test_request_base_url_uses_request_host_before_origin_header() -> None:
     request = SimpleNamespace(
         headers={"origin": "http://192.168.1.10:3000"},
-        base_url="http://localhost:8000/",
+        base_url="http://host.docker.internal:8000/",
     )
 
-    assert request_base_url(request) == "http://192.168.1.10:3000"
+    assert request_base_url(request) == "http://host.docker.internal:8000"
 
 
 def test_request_base_url_uses_forwarded_host() -> None:
@@ -68,7 +68,7 @@ def test_openwebui_auth_rejects_wrong_key() -> None:
 
 def test_openwebui_search_results_adapt_local_search_response() -> None:
     document_id = uuid4()
-    source_base_url = "https://www.example.com"
+    source_base_url = "http://host.docker.internal:8000"
     results = _to_openwebui_search_results(
         [
             SearchResult(
@@ -93,7 +93,7 @@ def test_openwebui_search_results_adapt_local_search_response() -> None:
 
     assert len(results) == 1
     assert results[0].title == "Equations"
-    assert results[0].link == f"{source_base_url}/documents/{document_id}"
+    assert results[0].link == f"http://host.docker.internal:8000/documents/{document_id}"
     assert "корни уравнения" in results[0].snippet
     assert "внутри интервала" in results[0].snippet
 

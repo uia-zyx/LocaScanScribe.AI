@@ -10,8 +10,7 @@ class Settings(BaseSettings):
     app_name: str = "LocaScanScribe.AI"
     app_env: str = "local"
     cors_origins: str = "*"
-    openwebui_web_search_api_key: str = ""
-    openwebui_result_base_url: str = "https://www.example.com"
+    openwebui_web_search_api_key: str = "locascan-openwebui-local-key"
     openwebui_loader_max_chars: int = 20000
 
     postgres_host: str = "postgres"

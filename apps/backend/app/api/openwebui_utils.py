@@ -29,16 +29,20 @@ def validate_openwebui_key(
 
 
 def request_base_url(request: Request) -> str:
-    origin = request.headers.get("origin")
-    if origin:
-        return origin.rstrip("/")
-
     forwarded_proto = request.headers.get("x-forwarded-proto")
     forwarded_host = request.headers.get("x-forwarded-host")
     if forwarded_proto and forwarded_host:
         return f"{forwarded_proto}://{forwarded_host}".rstrip("/")
 
-    return str(request.base_url).rstrip("/")
+    base_url = str(request.base_url).rstrip("/")
+    if base_url:
+        return base_url
+
+    origin = request.headers.get("origin")
+    if origin:
+        return origin.rstrip("/")
+
+    return ""
 
 
 def document_frontend_url(base_url: str, document_id: UUID) -> str:

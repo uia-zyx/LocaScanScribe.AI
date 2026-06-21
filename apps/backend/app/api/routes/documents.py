@@ -9,6 +9,7 @@ from fastapi import (
     Depends,
     File,
     Form,
+    Header,
     HTTPException,
     UploadFile,
     status,
@@ -21,7 +22,9 @@ from app.api.deps import (
     get_ingestion_service,
     get_vector_store,
 )
+from app.api.openwebui_utils import validate_openwebui_key
 from app.api.schemas import DocumentListItem, DocumentUpdateRequest, DocumentUploadResponse
+from app.core.settings import Settings, get_settings
 from app.domain.models import Document, DocumentStatus, ProcessingStrategy
 from app.ingestion.repository import DocumentRepository
 from app.ingestion.service import IngestionService
@@ -80,7 +83,11 @@ async def list_documents(
 @router.post("/reindex-vectors")
 async def reindex_document_vectors(
     service: Annotated[IngestionService, Depends(get_ingestion_service)],
+    settings: Annotated[Settings, Depends(get_settings)],
+    authorization: Annotated[str | None, Header()] = None,
+    x_api_key: Annotated[str | None, Header()] = None,
 ) -> dict[str, int]:
+    validate_openwebui_key(settings, authorization, x_api_key)
     indexed_count = await service.reindex_all_vectors()
     return {"indexed_documents": indexed_count}
 
