@@ -101,11 +101,7 @@ class ParserRegistry:
                     "content": [
                         {
                             "type": "text",
-                            "text": (
-                                "Recognize the entire document in this image. "
-                                "Return only clean Markdown. Preserve headings, lists, tables, "
-                                "numbers, and line order. Do not summarize."
-                            ),
+                            "text": "Text Recognition:",
                         },
                         {
                             "type": "image_url",

@@ -1,10 +1,13 @@
 import hashlib
+import logging
 from uuid import UUID, uuid4
 
 from app.domain.models import Document, DocumentStatus, ProcessingStrategy
 from app.parsers.base import StoredFile
 from app.parsers.registry import ParserRegistry
 from app.search.chunking import chunk_markdown
+
+logger = logging.getLogger(__name__)
 
 
 class InMemoryDocumentRepository:
@@ -52,22 +55,45 @@ class IngestionService:
         if existing_document is not None:
             return existing_document, uuid4(), True
 
-        file = StoredFile(filename=filename, mime_type=mime_type, content=content)
-        parsed = await self.parser_registry.parse(file, strategy)
-
         document = Document(
-            title=parsed.title,
+            title=filename,
             original_filename=filename,
             mime_type=mime_type,
             original_content=content,
             content_hash=content_hash,
-            status=DocumentStatus.indexed,
-            processing_strategy=parsed.strategy,
-            markdown=parsed.markdown,
+            status=DocumentStatus.processing,
+            processing_strategy=strategy,
         )
         self.repository.save(document)
-
-        # The chunking call is intentionally kept here so API contracts already match ingestion.
-        chunk_markdown(document.id, parsed.markdown)
         return document, uuid4(), False
+
+    async def process_document(self, document_id: UUID) -> None:
+        document = self.repository.get(document_id)
+        if document is None:
+            return
+
+        file = StoredFile(
+            filename=document.original_filename,
+            mime_type=document.mime_type,
+            content=document.original_content,
+        )
+
+        try:
+            parsed = await self.parser_registry.parse(file, document.processing_strategy)
+            document.title = parsed.title
+            document.status = DocumentStatus.indexed
+            document.processing_strategy = parsed.strategy
+            document.markdown = parsed.markdown
+            self.repository.save(document)
+
+            # The chunking call is intentionally kept here so API contracts already match ingestion.
+            chunk_markdown(document.id, parsed.markdown)
+        except Exception:
+            logger.exception("Document processing failed for %s", document.id)
+            document.status = DocumentStatus.failed
+            document.markdown = (
+                f"# {document.original_filename}\n\n"
+                "_Document processing failed. Check backend and OCR service logs._"
+            )
+            self.repository.save(document)
 

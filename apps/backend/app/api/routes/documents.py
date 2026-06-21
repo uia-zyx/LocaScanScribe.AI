@@ -2,7 +2,7 @@ from uuid import UUID
 from pathlib import Path
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import Response
 
 from app.api.deps import get_document_repository, get_ingestion_service
@@ -15,6 +15,7 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 
 @router.post("", response_model=DocumentUploadResponse, status_code=status.HTTP_202_ACCEPTED)
 async def upload_document(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     strategy: ProcessingStrategy = Form(...),
     service: IngestionService = Depends(get_ingestion_service),
@@ -26,6 +27,8 @@ async def upload_document(
         content=content,
         strategy=strategy,
     )
+    if not deduplicated:
+        background_tasks.add_task(service.process_document, document.id)
 
     return DocumentUploadResponse(
         document_id=document.id,

@@ -11,7 +11,7 @@ import Tabs from 'primevue/tabs';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { uploadDocument, type ProcessingStrategy } from '../services/api';
+import { getDocument, uploadDocument, type ProcessingStrategy } from '../services/api';
 
 const selectedFile = ref<File | null>(null);
 const strategy = ref<ProcessingStrategy>('scanner_ocr');
@@ -21,6 +21,7 @@ const uploading = ref(false);
 const uploadProgress = ref(0);
 const uploadStage = ref('');
 const { t } = useI18n();
+let activeUploadToken = 0;
 
 function onSelect(event: FileUploadSelectEvent) {
   selectedFile.value = event.files[0] ?? null;
@@ -42,6 +43,8 @@ async function upload(strategyOverride?: ProcessingStrategy) {
     status.value = '';
     uploadProgress.value = 0;
     uploadStage.value = t('upload.stages.uploading');
+    const uploadToken = Date.now();
+    activeUploadToken = uploadToken;
 
     const selectedStrategy = strategyOverride ?? strategy.value;
     const response = await uploadDocument(selectedFile.value, selectedStrategy, (progress) => {
@@ -52,22 +55,67 @@ async function upload(strategyOverride?: ProcessingStrategy) {
     });
 
     uploadProgress.value = 100;
-    uploadStage.value = t('upload.stages.done');
-    status.value = response.deduplicated
-      ? t('upload.duplicate', {
-          name: selectedFile.value.name,
-          id: response.document_id,
-        })
-      : t('upload.uploaded', {
-          name: selectedFile.value.name,
-          id: response.document_id,
-        });
+    if (response.deduplicated || response.status === 'indexed') {
+      uploadStage.value = t('upload.stages.done');
+      status.value = response.deduplicated
+        ? t('upload.duplicate', {
+            name: selectedFile.value.name,
+            id: response.document_id,
+          })
+        : t('upload.uploaded', {
+            name: selectedFile.value.name,
+            id: response.document_id,
+          });
+      return;
+    }
+
+    uploadStage.value = t('upload.stages.processingBackground');
+    status.value = t('upload.processingQueued', {
+      name: selectedFile.value.name,
+      id: response.document_id,
+    });
+    void pollProcessingStatus(response.document_id, selectedFile.value.name, uploadToken);
   } catch (requestError) {
     error.value = requestError instanceof Error ? requestError.message : t('upload.failed');
     uploadStage.value = t('upload.stages.failed');
   } finally {
     uploading.value = false;
   }
+}
+
+async function pollProcessingStatus(documentId: string, filename: string, uploadToken: number) {
+  for (let attempt = 0; attempt < 900; attempt += 1) {
+    await sleep(2000);
+    if (uploadToken !== activeUploadToken) {
+      return;
+    }
+
+    try {
+      const document = await getDocument(documentId);
+      if (document.status === 'indexed') {
+        uploadStage.value = t('upload.stages.done');
+        status.value = t('upload.processed', { name: filename, id: documentId });
+        return;
+      }
+
+      if (document.status === 'failed') {
+        uploadStage.value = t('upload.stages.failed');
+        error.value = t('upload.processingFailed', { name: filename });
+        return;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  uploadStage.value = t('upload.stages.processingBackground');
+  error.value = t('upload.processingTimeout');
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
 }
 </script>
 

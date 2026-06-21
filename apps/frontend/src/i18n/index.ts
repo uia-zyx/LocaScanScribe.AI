@@ -55,11 +55,18 @@ export const messages = {
       chooseFileFirst: 'Choose a file first.',
       uploaded: 'Uploaded {name}; document id {id}',
       duplicate: 'Document {name} already exists; opened existing document id {id}',
+      processingQueued:
+        'Uploaded {name}; OCR is running in the background. Document id {id}',
+      processed: 'OCR completed for {name}; document id {id}',
+      processingFailed: 'OCR processing failed for {name}. Check backend logs.',
+      processingTimeout:
+        'OCR is still running in the background. Open the Documents page to check status.',
       failed: 'Upload failed',
       selectedFile: 'Selected file',
       stages: {
         uploading: 'Uploading file',
         processing: 'Recognizing and indexing document',
+        processingBackground: 'Recognizing in the background',
         done: 'Done',
         failed: 'Failed',
       },
@@ -123,11 +130,18 @@ export const messages = {
       chooseFileFirst: 'Сначала выберите файл.',
       uploaded: 'Загружен {name}; document id {id}',
       duplicate: 'Документ {name} уже существует; открыт существующий document id {id}',
+      processingQueued:
+        'Файл {name} загружен; OCR выполняется в фоне. Document id {id}',
+      processed: 'OCR завершён для {name}; document id {id}',
+      processingFailed: 'OCR обработка не удалась для {name}. Проверьте логи backend.',
+      processingTimeout:
+        'OCR всё ещё выполняется в фоне. Откройте страницу документов, чтобы проверить статус.',
       failed: 'Ошибка загрузки',
       selectedFile: 'Выбранный файл',
       stages: {
         uploading: 'Загрузка файла',
         processing: 'Распознавание и индексация документа',
+        processingBackground: 'Распознавание в фоне',
         done: 'Готово',
         failed: 'Ошибка',
       },
