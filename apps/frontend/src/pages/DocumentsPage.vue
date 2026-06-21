@@ -83,7 +83,7 @@ onMounted(loadDocuments);
     <div class="page-heading">
       <h1>{{ t('documents.title') }}</h1>
       <RouterLink to="/upload">
-        <Button :label="t('documents.uploadNew')" icon="pi pi-plus" />
+        <Button :aria-label="t('documents.uploadNew')" :title="t('documents.uploadNew')" icon="pi pi-plus" rounded />
       </RouterLink>
     </div>
 
@@ -105,15 +105,19 @@ onMounted(loadDocuments);
           <div v-if="editingId === document.id" class="document-edit-form">
             <input v-model="editingTitle" class="document-title-input" />
             <Button
+              :aria-label="t('documents.save')"
               :disabled="!editingTitle.trim()"
-              :label="t('documents.save')"
               :loading="savingId === document.id"
+              icon="pi pi-check"
+              rounded
               size="small"
               @click="saveTitle(document)"
             />
             <Button
+              :aria-label="t('documents.cancel')"
               :disabled="savingId === document.id"
-              :label="t('documents.cancel')"
+              icon="pi pi-times"
+              rounded
               size="small"
               text
               @click="cancelEdit"
@@ -130,26 +134,42 @@ onMounted(loadDocuments);
 
         <div class="document-card-actions">
           <RouterLink :to="`/documents/${document.id}`">
-            <Button :label="t('documents.openRecognized')" text />
+            <Button
+              :aria-label="t('documents.openRecognized')"
+              :title="t('documents.openRecognized')"
+              icon="pi pi-eye"
+              rounded
+              text
+            />
           </RouterLink>
           <Button
             v-if="editingId !== document.id"
-            :label="t('documents.rename')"
+            :aria-label="t('documents.rename')"
+            :title="t('documents.rename')"
             icon="pi pi-pencil"
+            rounded
             text
             :disabled="deletingId === document.id"
             @click="startEdit(document)"
           />
           <Button
-            :label="t('documents.delete')"
+            :aria-label="t('documents.delete')"
+            :title="t('documents.delete')"
             icon="pi pi-trash"
             :loading="deletingId === document.id"
+            rounded
             severity="danger"
             text
             @click="removeDocument(document)"
           />
           <a :href="getOriginalDocumentUrl(document.id)" :download="document.original_filename">
-            <Button :label="t('documents.downloadOriginal')" icon="pi pi-download" text />
+            <Button
+              :aria-label="t('documents.downloadOriginal')"
+              :title="t('documents.downloadOriginal')"
+              icon="pi pi-download"
+              rounded
+              text
+            />
           </a>
         </div>
       </article>

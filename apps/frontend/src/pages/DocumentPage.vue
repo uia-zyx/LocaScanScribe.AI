@@ -48,7 +48,12 @@ onMounted(async () => {
       <div class="document-actions">
         <h1>{{ t('document.recognized') }}</h1>
         <a :href="originalUrl" :download="originalFilename">
-          <Button :label="t('document.downloadOriginal')" icon="pi pi-download" />
+          <Button
+            :aria-label="t('document.downloadOriginal')"
+            :title="t('document.downloadOriginal')"
+            icon="pi pi-download"
+            rounded
+          />
         </a>
       </div>
 

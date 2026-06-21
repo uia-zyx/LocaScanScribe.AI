@@ -187,7 +187,11 @@ a:hover {
 .document-card-actions {
   align-items: center;
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
+}
+
+.document-card-actions a {
+  display: inline-flex;
 }
 
 .document-edit-form {
