@@ -14,6 +14,15 @@ from app.parsers.base import ParsedDocument, StoredFile
 
 logger = logging.getLogger(__name__)
 
+OCR_MARKDOWN_PROMPT = """Text Recognition:
+Return only clean GitHub-Flavored Markdown.
+Preserve the original language and reading order.
+Use Markdown headings, paragraphs, lists, and tables where they appear in the image.
+Render tables as valid Markdown tables.
+Wrap inline math in $...$ and display math in $$...$$.
+Do not output raw TeX outside math delimiters.
+Do not add explanations, comments, code fences, filenames, or page titles."""
+
 
 class ParserRegistry:
     def __init__(self) -> None:
@@ -140,7 +149,12 @@ class ParserRegistry:
         title: str,
     ) -> tuple[int, str]:
         logger.info("Starting OCR for PDF page %s/%s", page_index + 1, page_count)
-        page_markdown = await self._ocr_image_bytes(image_bytes, mime_type, title)
+        page_markdown = await self._ocr_image_bytes(
+            image_bytes,
+            mime_type,
+            title,
+            include_title=False,
+        )
         page_text = page_markdown.strip()
         if not page_text:
             page_text = "_No text could be recognized on this page._"
@@ -154,7 +168,13 @@ class ParserRegistry:
         pixmap = page.get_pixmap(matrix=fitz.Matrix(scale, scale), alpha=False)
         return pixmap.tobytes("jpeg", jpg_quality=self.settings.pdf_ocr_jpeg_quality), "image/jpeg"
 
-    async def _ocr_image_bytes(self, content: bytes, mime_type: str, title: str) -> str:
+    async def _ocr_image_bytes(
+        self,
+        content: bytes,
+        mime_type: str,
+        title: str,
+        include_title: bool = True,
+    ) -> str:
         image_base64 = base64.b64encode(content).decode("ascii")
         payload = {
             "model": self.settings.llama_ocr_model,
@@ -164,7 +184,7 @@ class ParserRegistry:
                     "content": [
                         {
                             "type": "text",
-                            "text": "Text Recognition:",
+                            "text": OCR_MARKDOWN_PROMPT,
                         },
                         {
                             "type": "image_url",
@@ -191,7 +211,10 @@ class ParserRegistry:
         if not content:
             return "_No text could be recognized in this image._"
 
-        return f"# {title}\n\n{content}" if not content.lstrip().startswith("#") else content
+        if include_title and not content.lstrip().startswith("#"):
+            return f"# {title}\n\n{content}"
+
+        return content
 
     def _decode_text(self, content: bytes) -> str:
         try:
