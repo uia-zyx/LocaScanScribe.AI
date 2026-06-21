@@ -67,23 +67,24 @@ class IngestionService:
         try:
             parsed = await self.parser_registry.parse(file, document.processing_strategy)
             document.title = parsed.title
-            document.status = DocumentStatus.indexed
+            document.status = DocumentStatus.processing
             document.processing_strategy = parsed.strategy
             document.markdown = parsed.markdown
             self.repository.save(document)
 
             chunks = chunk_markdown(document.id, parsed.markdown)
-            try:
-                await self.vector_store.upsert_document_chunks(document, chunks)
-            except Exception:
-                logger.exception("Vector indexing failed for %s", document.id)
+            await self.vector_store.upsert_document_chunks(document, chunks)
+
+            document.status = DocumentStatus.indexed
+            self.repository.save(document)
         except Exception:
-            logger.exception("Document processing failed for %s", document.id)
+            logger.exception("Document processing or vector indexing failed for %s", document.id)
             document.status = DocumentStatus.failed
-            document.markdown = (
-                f"# {document.original_filename}\n\n"
-                "_Document processing failed. Check backend and OCR service logs._"
-            )
+            if not document.markdown:
+                document.markdown = (
+                    f"# {document.original_filename}\n\n"
+                    "_Document processing failed. Check backend and OCR service logs._"
+                )
             self.repository.save(document)
 
     async def reindex_document_vectors(self, document_id: UUID) -> bool:

@@ -63,7 +63,7 @@ export const messages = {
       processingQueued:
         'Uploaded {name}; OCR is running in the background. Document id {id}',
       processed: 'OCR completed for {name}; document id {id}',
-      processingFailed: 'OCR processing failed for {name}. Check backend logs.',
+      processingFailed: 'Document processing or indexing failed for {name}. Check backend logs.',
       processingTimeout:
         'OCR is still running in the background. Open the Documents page to check status.',
       failed: 'Upload failed',
@@ -82,7 +82,7 @@ export const messages = {
       downloadOriginal: 'Download original',
       downloadRecognized: 'Download recognized Markdown',
       processing: 'OCR is still processing this document. The page will update automatically.',
-      processingFailed: 'OCR processing failed for this document.',
+      processingFailed: 'Document processing or indexing failed for this document.',
       retryProcessing: 'Retry OCR processing',
       retryFailed: 'Failed to retry OCR processing',
       loadFailed: 'Failed to load document',
@@ -216,7 +216,8 @@ export const messages = {
       processingQueued:
         'Файл {name} загружен; OCR выполняется в фоне. Document id {id}',
       processed: 'OCR завершён для {name}; document id {id}',
-      processingFailed: 'OCR обработка не удалась для {name}. Проверьте логи backend.',
+      processingFailed:
+        'Обработка или индексация документа не удалась для {name}. Проверьте логи backend.',
       processingTimeout:
         'OCR всё ещё выполняется в фоне. Откройте страницу документов, чтобы проверить статус.',
       failed: 'Ошибка загрузки',
@@ -235,7 +236,7 @@ export const messages = {
       downloadOriginal: 'Скачать оригинал',
       downloadRecognized: 'Скачать распознанный Markdown',
       processing: 'OCR ещё обрабатывает этот документ. Страница обновится автоматически.',
-      processingFailed: 'OCR обработка этого документа не удалась.',
+      processingFailed: 'Обработка или индексация этого документа не удалась.',
       retryProcessing: 'Повторить OCR обработку',
       retryFailed: 'Не удалось повторно запустить OCR обработку',
       loadFailed: 'Не удалось загрузить документ',
