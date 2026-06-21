@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import logging
+import re
 import tempfile
 from pathlib import Path
 
@@ -216,11 +217,20 @@ class ParserRegistry:
             return content.decode("utf-8", errors="replace")
 
     def _normalize_markdown(self, filename: str, markdown: str) -> str:
-        cleaned = markdown.strip()
+        cleaned = self._post_process_ocr_markdown(markdown)
         if not cleaned:
             cleaned = "_No text could be extracted from this document._"
 
         return cleaned if cleaned.lstrip().startswith("#") else f"# {filename}\n\n{cleaned}"
+
+    def _post_process_ocr_markdown(self, markdown: str) -> str:
+        cleaned = markdown.strip()
+        cleaned = re.sub(r"^```(?:markdown|md)?\s*", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+        cleaned = re.sub(r"[ \t]+\n", "\n", cleaned)
+        cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+        cleaned = re.sub(r"(?<!\$)\$\s+([^$\n]+?)\s+\$(?!\$)", r"$\1$", cleaned)
+        return cleaned.strip()
 
     def _has_meaningful_content(self, markdown: str) -> bool:
         text = markdown.replace("#", "").strip()

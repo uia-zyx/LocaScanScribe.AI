@@ -3,11 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import documents, health, search
 from app.core.settings import get_settings
+from app.db.session import init_database
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title=settings.app_name)
+
+    @app.on_event("startup")
+    def on_startup() -> None:
+        init_database()
 
     app.add_middleware(
         CORSMiddleware,

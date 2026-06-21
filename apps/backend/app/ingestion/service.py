@@ -3,45 +3,25 @@ import logging
 from uuid import UUID, uuid4
 
 from app.domain.models import Document, DocumentStatus, ProcessingStrategy
+from app.ingestion.repository import DocumentRepository
 from app.parsers.base import StoredFile
 from app.parsers.registry import ParserRegistry
 from app.search.chunking import chunk_markdown
+from app.search.vector_store import VectorStore
 
 logger = logging.getLogger(__name__)
-
-
-class InMemoryDocumentRepository:
-    def __init__(self) -> None:
-        self.documents: dict[UUID, Document] = {}
-
-    def save(self, document: Document) -> Document:
-        self.documents[document.id] = document
-        return document
-
-    def list(self) -> list[Document]:
-        return sorted(self.documents.values(), key=lambda item: item.created_at, reverse=True)
-
-    def get(self, document_id: UUID) -> Document | None:
-        return self.documents.get(document_id)
-
-    def find_by_content_hash(self, content_hash: str) -> Document | None:
-        return next(
-            (document for document in self.documents.values() if document.content_hash == content_hash),
-            None,
-        )
-
-    def delete(self, document_id: UUID) -> bool:
-        return self.documents.pop(document_id, None) is not None
 
 
 class IngestionService:
     def __init__(
         self,
-        repository: InMemoryDocumentRepository,
+        repository: DocumentRepository,
         parser_registry: ParserRegistry,
+        vector_store: VectorStore,
     ) -> None:
         self.repository = repository
         self.parser_registry = parser_registry
+        self.vector_store = vector_store
 
     async def ingest(
         self,
@@ -63,6 +43,12 @@ class IngestionService:
             content_hash=content_hash,
             status=DocumentStatus.processing,
             processing_strategy=strategy,
+        )
+        document.storage_key = self.repository.object_store.put_document(
+            document_id=document.id,
+            filename=filename,
+            content=content,
+            mime_type=mime_type,
         )
         self.repository.save(document)
         return document, uuid4(), False
@@ -86,8 +72,11 @@ class IngestionService:
             document.markdown = parsed.markdown
             self.repository.save(document)
 
-            # The chunking call is intentionally kept here so API contracts already match ingestion.
-            chunk_markdown(document.id, parsed.markdown)
+            chunks = chunk_markdown(document.id, parsed.markdown)
+            try:
+                await self.vector_store.upsert_document_chunks(document, chunks)
+            except Exception:
+                logger.exception("Vector indexing failed for %s", document.id)
         except Exception:
             logger.exception("Document processing failed for %s", document.id)
             document.status = DocumentStatus.failed

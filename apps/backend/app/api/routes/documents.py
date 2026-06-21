@@ -5,10 +5,18 @@ from urllib.parse import quote
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import Response
 
-from app.api.deps import get_document_repository, get_ingestion_service
+from app.api.deps import (
+    get_document_job_queue,
+    get_document_repository,
+    get_ingestion_service,
+    get_vector_store,
+)
 from app.api.schemas import DocumentListItem, DocumentUpdateRequest, DocumentUploadResponse
 from app.domain.models import ProcessingStrategy
-from app.ingestion.service import IngestionService, InMemoryDocumentRepository
+from app.ingestion.repository import DocumentRepository
+from app.ingestion.service import IngestionService
+from app.jobs.queue import DocumentJobQueue
+from app.search.vector_store import VectorStore
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -19,6 +27,7 @@ async def upload_document(
     file: UploadFile = File(...),
     strategy: ProcessingStrategy = Form(...),
     service: IngestionService = Depends(get_ingestion_service),
+    job_queue: DocumentJobQueue = Depends(get_document_job_queue),
 ) -> DocumentUploadResponse:
     content = await file.read()
     document, job_id, deduplicated = await service.ingest(
@@ -28,7 +37,10 @@ async def upload_document(
         strategy=strategy,
     )
     if not deduplicated:
-        background_tasks.add_task(service.process_document, document.id)
+        try:
+            job_queue.enqueue_processing(document.id)
+        except Exception:
+            background_tasks.add_task(service.process_document, document.id)
 
     return DocumentUploadResponse(
         document_id=document.id,
@@ -40,7 +52,7 @@ async def upload_document(
 
 @router.get("", response_model=list[DocumentListItem])
 async def list_documents(
-    repository: InMemoryDocumentRepository = Depends(get_document_repository),
+    repository: DocumentRepository = Depends(get_document_repository),
 ) -> list[DocumentListItem]:
     return [
         DocumentListItem(
@@ -58,7 +70,7 @@ async def list_documents(
 @router.get("/{document_id}", response_model=DocumentListItem)
 async def get_document(
     document_id: UUID,
-    repository: InMemoryDocumentRepository = Depends(get_document_repository),
+    repository: DocumentRepository = Depends(get_document_repository),
 ) -> DocumentListItem:
     document = repository.get(document_id)
     if document is None:
@@ -78,7 +90,7 @@ async def get_document(
 async def update_document(
     document_id: UUID,
     request: DocumentUpdateRequest,
-    repository: InMemoryDocumentRepository = Depends(get_document_repository),
+    repository: DocumentRepository = Depends(get_document_repository),
 ) -> DocumentListItem:
     document = repository.get(document_id)
     if document is None:
@@ -100,8 +112,14 @@ async def update_document(
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_document(
     document_id: UUID,
-    repository: InMemoryDocumentRepository = Depends(get_document_repository),
+    repository: DocumentRepository = Depends(get_document_repository),
+    vector_store: VectorStore = Depends(get_vector_store),
 ) -> Response:
+    try:
+        vector_store.delete_document(document_id)
+    except Exception:
+        pass
+
     if not repository.delete(document_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
 
@@ -111,9 +129,9 @@ async def delete_document(
 @router.get("/{document_id}/markdown", response_model=str)
 async def get_document_markdown(
     document_id: UUID,
-    repository: InMemoryDocumentRepository = Depends(get_document_repository),
+    repository: DocumentRepository = Depends(get_document_repository),
 ) -> str:
-    document = repository.get(document_id)
+    document = repository.get(document_id, include_content=False)
     if document is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
 
@@ -123,9 +141,9 @@ async def get_document_markdown(
 @router.get("/{document_id}/recognized")
 async def get_recognized_document(
     document_id: UUID,
-    repository: InMemoryDocumentRepository = Depends(get_document_repository),
+    repository: DocumentRepository = Depends(get_document_repository),
 ) -> Response:
-    document = repository.get(document_id)
+    document = repository.get(document_id, include_content=False)
     if document is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
 
@@ -144,7 +162,7 @@ async def get_recognized_document(
 @router.get("/{document_id}/original")
 async def get_original_document(
     document_id: UUID,
-    repository: InMemoryDocumentRepository = Depends(get_document_repository),
+    repository: DocumentRepository = Depends(get_document_repository),
 ) -> Response:
     document = repository.get(document_id)
     if document is None:

@@ -25,8 +25,12 @@ services:
       - path: ../.env
         required: false
     depends_on:
-      - backend
+      - postgres
+      - qdrant
       - redis
+      - minio
+      - llama-ocr
+      - llama-embedding
 
   frontend:
     build:
@@ -89,9 +93,7 @@ services:
       - "--mmproj"
       - "/models/mmproj-GLM-OCR-Q8_0.gguf"
       - "--flash-attn"
-      - "off"
-      - "-fit"
-      - "off"
+      - "on"
     volumes:
       - ../model:/models:ro
 
