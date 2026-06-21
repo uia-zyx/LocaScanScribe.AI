@@ -16,6 +16,8 @@ node_modules/
 dist/
 .vite/
 *.tsbuildinfo
+apps/frontend/src/**/*.js
+apps/frontend/src/**/*.js.map
 
 # Local model binaries
 model/
