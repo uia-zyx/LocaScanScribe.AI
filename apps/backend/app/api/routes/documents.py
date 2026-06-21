@@ -1,8 +1,18 @@
-from uuid import UUID
 from pathlib import Path
+from typing import Annotated
 from urllib.parse import quote
+from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    UploadFile,
+    status,
+)
 from fastapi.responses import Response
 
 from app.api.deps import (
@@ -24,10 +34,10 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 @router.post("", response_model=DocumentUploadResponse, status_code=status.HTTP_202_ACCEPTED)
 async def upload_document(
     background_tasks: BackgroundTasks,
-    file: UploadFile = File(...),
-    strategy: ProcessingStrategy = Form(...),
-    service: IngestionService = Depends(get_ingestion_service),
-    job_queue: DocumentJobQueue = Depends(get_document_job_queue),
+    file: Annotated[UploadFile, File(...)],
+    strategy: Annotated[ProcessingStrategy, Form(...)],
+    service: Annotated[IngestionService, Depends(get_ingestion_service)],
+    job_queue: Annotated[DocumentJobQueue, Depends(get_document_job_queue)],
 ) -> DocumentUploadResponse:
     content = await file.read()
     document, job_id, deduplicated = await service.ingest(
@@ -52,7 +62,7 @@ async def upload_document(
 
 @router.get("", response_model=list[DocumentListItem])
 async def list_documents(
-    repository: DocumentRepository = Depends(get_document_repository),
+    repository: Annotated[DocumentRepository, Depends(get_document_repository)],
 ) -> list[DocumentListItem]:
     return [
         DocumentListItem(
@@ -70,7 +80,7 @@ async def list_documents(
 @router.get("/{document_id}", response_model=DocumentListItem)
 async def get_document(
     document_id: UUID,
-    repository: DocumentRepository = Depends(get_document_repository),
+    repository: Annotated[DocumentRepository, Depends(get_document_repository)],
 ) -> DocumentListItem:
     document = repository.get(document_id)
     if document is None:
@@ -90,7 +100,7 @@ async def get_document(
 async def update_document(
     document_id: UUID,
     request: DocumentUpdateRequest,
-    repository: DocumentRepository = Depends(get_document_repository),
+    repository: Annotated[DocumentRepository, Depends(get_document_repository)],
 ) -> DocumentListItem:
     document = repository.get(document_id)
     if document is None:
@@ -112,8 +122,8 @@ async def update_document(
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_document(
     document_id: UUID,
-    repository: DocumentRepository = Depends(get_document_repository),
-    vector_store: VectorStore = Depends(get_vector_store),
+    repository: Annotated[DocumentRepository, Depends(get_document_repository)],
+    vector_store: Annotated[VectorStore, Depends(get_vector_store)],
 ) -> Response:
     try:
         vector_store.delete_document(document_id)
@@ -129,7 +139,7 @@ async def delete_document(
 @router.get("/{document_id}/markdown", response_model=str)
 async def get_document_markdown(
     document_id: UUID,
-    repository: DocumentRepository = Depends(get_document_repository),
+    repository: Annotated[DocumentRepository, Depends(get_document_repository)],
 ) -> str:
     document = repository.get(document_id, include_content=False)
     if document is None:
@@ -141,17 +151,16 @@ async def get_document_markdown(
 @router.get("/{document_id}/recognized")
 async def get_recognized_document(
     document_id: UUID,
-    repository: DocumentRepository = Depends(get_document_repository),
+    repository: Annotated[DocumentRepository, Depends(get_document_repository)],
 ) -> Response:
     document = repository.get(document_id, include_content=False)
     if document is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
 
     filename = _recognized_filename(document.original_filename)
+    content = document.markdown or _pending_markdown(document.original_filename, document.status)
     return Response(
-        content=(document.markdown or _pending_markdown(document.original_filename, document.status)).encode(
-            "utf-8"
-        ),
+        content=content.encode("utf-8"),
         media_type="text/markdown; charset=utf-8",
         headers={
             "Content-Disposition": _content_disposition(filename),
@@ -162,7 +171,7 @@ async def get_recognized_document(
 @router.get("/{document_id}/original")
 async def get_original_document(
     document_id: UUID,
-    repository: DocumentRepository = Depends(get_document_repository),
+    repository: Annotated[DocumentRepository, Depends(get_document_repository)],
 ) -> Response:
     document = repository.get(document_id)
     if document is None:

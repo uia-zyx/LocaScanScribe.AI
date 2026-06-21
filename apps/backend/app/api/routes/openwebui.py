@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Header
 
 from app.api.deps import get_document_repository, get_search_service
@@ -23,10 +25,10 @@ router = APIRouter(prefix="/openwebui", tags=["openwebui"])
 @router.post("/web-search", response_model=list[OpenWebUISearchResult])
 async def openwebui_web_search(
     request: OpenWebUISearchRequest,
-    authorization: str | None = Header(default=None),
-    x_api_key: str | None = Header(default=None),
-    settings: Settings = Depends(get_settings),
-    search_service: SearchService = Depends(get_search_service),
+    settings: Annotated[Settings, Depends(get_settings)],
+    search_service: Annotated[SearchService, Depends(get_search_service)],
+    authorization: Annotated[str | None, Header()] = None,
+    x_api_key: Annotated[str | None, Header()] = None,
 ) -> list[OpenWebUISearchResult]:
     validate_openwebui_key(settings, authorization, x_api_key)
 
@@ -44,10 +46,10 @@ async def openwebui_web_search(
 @router.post("/web-loader", response_model=list[OpenWebUILoaderResult])
 async def openwebui_web_loader(
     request: OpenWebUILoaderRequest,
-    authorization: str | None = Header(default=None),
-    x_api_key: str | None = Header(default=None),
-    settings: Settings = Depends(get_settings),
-    repository: DocumentRepository = Depends(get_document_repository),
+    settings: Annotated[Settings, Depends(get_settings)],
+    repository: Annotated[DocumentRepository, Depends(get_document_repository)],
+    authorization: Annotated[str | None, Header()] = None,
+    x_api_key: Annotated[str | None, Header()] = None,
 ) -> list[OpenWebUILoaderResult]:
     validate_openwebui_key(settings, authorization, x_api_key)
 

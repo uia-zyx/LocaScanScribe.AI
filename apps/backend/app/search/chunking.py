@@ -3,7 +3,11 @@ from uuid import UUID
 from app.domain.models import DocumentChunk
 
 
-def chunk_markdown(document_id: UUID, markdown: str, target_size: int = 1200) -> list[DocumentChunk]:
+def chunk_markdown(
+    document_id: UUID,
+    markdown: str,
+    target_size: int = 1200,
+) -> list[DocumentChunk]:
     paragraphs = [part.strip() for part in markdown.split("\n\n") if part.strip()]
     chunks: list[DocumentChunk] = []
     buffer: list[str] = []

@@ -14,7 +14,11 @@ class VectorStore:
         self.embedding_client = embedding_client
         self.client = QdrantClient(url=self.settings.qdrant_url)
 
-    async def upsert_document_chunks(self, document: Document, chunks: list[DocumentChunk]) -> None:
+    async def upsert_document_chunks(
+        self,
+        document: Document,
+        chunks: list[DocumentChunk],
+    ) -> None:
         if not chunks:
             return
 

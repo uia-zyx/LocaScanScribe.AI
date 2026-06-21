@@ -156,7 +156,11 @@ class ParserRegistry:
         logger.info("Finished OCR for PDF page %s/%s", page_index + 1, page_count)
         return page_index, f"## Page {page_index + 1}\n\n{page_text}"
 
-    def _render_pdf_page_to_image(self, document: fitz.Document, page_index: int) -> tuple[bytes, str]:
+    def _render_pdf_page_to_image(
+        self,
+        document: fitz.Document,
+        page_index: int,
+    ) -> tuple[bytes, str]:
         page = document.load_page(page_index)
         scale = self.settings.pdf_ocr_render_scale
         pixmap = page.get_pixmap(matrix=fitz.Matrix(scale, scale), alpha=False)
