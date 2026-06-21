@@ -8,12 +8,25 @@ export const messages = {
   en: {
     nav: {
       search: 'Search',
+      documents: 'Documents',
       upload: 'Upload',
       language: 'Language',
     },
     search: {
       placeholder: 'Search local documents',
       button: 'Search',
+      answerTitle: 'Answer',
+      answerFound:
+        'For “{query}”, I found {count} matching document(s). The strongest match is “{title}”. Key phrase: {snippet}',
+      answerEmpty: 'I did not find a clear answer for “{query}” in the indexed documents.',
+    },
+    documents: {
+      title: 'All Documents',
+      uploadNew: 'Upload document',
+      empty: 'No documents uploaded yet.',
+      openRecognized: 'Open recognized text',
+      downloadOriginal: 'Download original',
+      loadFailed: 'Failed to load documents',
     },
     upload: {
       title: 'Upload Documents',
@@ -47,12 +60,25 @@ export const messages = {
   ru: {
     nav: {
       search: 'Поиск',
+      documents: 'Документы',
       upload: 'Загрузка',
       language: 'Язык',
     },
     search: {
       placeholder: 'Поиск по локальным документам',
       button: 'Найти',
+      answerTitle: 'Ответ',
+      answerFound:
+        'По запросу «{query}» найдено документов: {count}. Самое сильное совпадение: «{title}». Ключевая фраза: {snippet}',
+      answerEmpty: 'Я не нашёл чёткого ответа по запросу «{query}» в проиндексированных документах.',
+    },
+    documents: {
+      title: 'Все документы',
+      uploadNew: 'Загрузить документ',
+      empty: 'Документы ещё не загружены.',
+      openRecognized: 'Открыть распознанный текст',
+      downloadOriginal: 'Скачать оригинал',
+      loadFailed: 'Не удалось загрузить документы',
     },
     upload: {
       title: 'Загрузка документов',

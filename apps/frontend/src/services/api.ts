@@ -21,6 +21,15 @@ export interface SearchResponse {
   items: SearchResult[];
 }
 
+export interface DocumentListItem {
+  id: string;
+  title: string;
+  original_filename: string;
+  mime_type: string;
+  status: string;
+  processing_strategy: ProcessingStrategy;
+}
+
 export function getOriginalDocumentUrl(documentId: string): string {
   return `/api/documents/${documentId}/original`;
 }
@@ -40,6 +49,11 @@ export async function uploadDocument(file: File, strategy: ProcessingStrategy) {
   formData.append('strategy', strategy);
 
   const response = await api.post('/documents', formData);
+  return response.data;
+}
+
+export async function listDocuments(): Promise<DocumentListItem[]> {
+  const response = await api.get<DocumentListItem[]>('/documents');
   return response.data;
 }
 

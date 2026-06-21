@@ -103,7 +103,7 @@ services:
       - "--host"
       - "0.0.0.0"
       - "--port"
-      - "8081"
+      - "8080"
       - "--n-gpu-layers"
       - "999"
       - "--embedding"

@@ -89,6 +89,23 @@ a:hover {
   margin-top: 3rem;
 }
 
+.answer-card {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 0.85rem;
+  padding: 1.25rem;
+}
+
+.answer-card h2 {
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem;
+}
+
+.answer-card p {
+  line-height: 1.55;
+  margin: 0;
+}
+
 .result-card {
   border-bottom: 1px solid #e5e7eb;
   padding-bottom: 1rem;
@@ -113,10 +130,54 @@ a:hover {
 }
 
 .upload-page,
+.documents-page,
 .document-page {
   margin: 0 auto;
   max-width: 900px;
   padding: 2rem;
+}
+
+.page-heading {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.page-heading h1 {
+  margin: 0;
+}
+
+.documents-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.document-card {
+  align-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem;
+}
+
+.document-meta {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin-top: 0.3rem;
+}
+
+.document-card-actions {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.empty-state {
+  color: #6b7280;
+  padding: 2rem 0;
+  text-align: center;
 }
 
 .upload-panel {

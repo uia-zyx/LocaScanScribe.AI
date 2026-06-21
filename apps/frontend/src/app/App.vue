@@ -18,6 +18,7 @@ const selectedLocale = computed({
       <RouterLink class="brand" to="/">LocaScanScribe.AI</RouterLink>
       <nav class="main-nav">
         <RouterLink to="/">{{ t('nav.search') }}</RouterLink>
+        <RouterLink to="/documents">{{ t('nav.documents') }}</RouterLink>
         <RouterLink to="/upload">{{ t('nav.upload') }}</RouterLink>
         <label class="language-select">
           <span>{{ t('nav.language') }}</span>
