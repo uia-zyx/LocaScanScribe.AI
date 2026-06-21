@@ -77,6 +77,14 @@ async def list_documents(
     ]
 
 
+@router.post("/reindex-vectors")
+async def reindex_document_vectors(
+    service: Annotated[IngestionService, Depends(get_ingestion_service)],
+) -> dict[str, int]:
+    indexed_count = await service.reindex_all_vectors()
+    return {"indexed_documents": indexed_count}
+
+
 @router.get("/{document_id}", response_model=DocumentListItem)
 async def get_document(
     document_id: UUID,

@@ -86,3 +86,24 @@ class IngestionService:
             )
             self.repository.save(document)
 
+    async def reindex_document_vectors(self, document_id: UUID) -> bool:
+        document = self.repository.get(document_id, include_content=False)
+        if document is None or not document.markdown:
+            return False
+
+        chunks = chunk_markdown(document.id, document.markdown)
+        self.vector_store.delete_document(document.id)
+        await self.vector_store.upsert_document_chunks(document, chunks)
+        return True
+
+    async def reindex_all_vectors(self) -> int:
+        indexed_count = 0
+        for document in self.repository.list():
+            if document.status != DocumentStatus.indexed or not document.markdown:
+                continue
+
+            if await self.reindex_document_vectors(document.id):
+                indexed_count += 1
+
+        return indexed_count
+
