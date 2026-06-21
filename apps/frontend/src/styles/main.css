@@ -106,6 +106,30 @@ a:hover {
   margin: 0;
 }
 
+.search-markdown-preview {
+  background: transparent;
+}
+
+.search-markdown-preview .md-editor-preview {
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  line-height: 1.55;
+  padding: 0;
+}
+
+.search-markdown-preview .md-editor-preview p {
+  margin: 0.35rem 0;
+}
+
+.search-markdown-preview .md-editor-preview p:first-child {
+  margin-top: 0;
+}
+
+.search-markdown-preview .md-editor-preview p:last-child {
+  margin-bottom: 0;
+}
+
 .result-card {
   border-bottom: 1px solid #e5e7eb;
   padding-bottom: 1rem;

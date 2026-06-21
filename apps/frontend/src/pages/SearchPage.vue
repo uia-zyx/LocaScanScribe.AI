@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { MdPreview } from 'md-editor-v3';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import ProgressSpinner from 'primevue/progressspinner';
@@ -67,15 +68,27 @@ if (query.value) {
     <section v-else class="results">
       <article v-if="answer" class="answer-card">
         <h2>{{ t('search.answerTitle') }}</h2>
-        <p>{{ answer }}</p>
+        <MdPreview
+          id="search-answer-preview"
+          class="search-markdown-preview"
+          :model-value="answer"
+          preview-theme="github"
+          theme="light"
+        />
       </article>
 
       <article v-for="item in store.results" :key="item.document_id" class="result-card">
         <RouterLink class="result-title" :to="item.url">{{ item.title }}</RouterLink>
         <div class="result-url">{{ item.url }}</div>
-        <p v-for="snippet in item.snippets" :key="snippet.chunk_id" class="snippet">
-          {{ snippet.phrase }}
-        </p>
+        <MdPreview
+          v-for="snippet in item.snippets"
+          :id="`snippet-preview-${snippet.chunk_id}`"
+          :key="snippet.chunk_id"
+          class="snippet search-markdown-preview"
+          :model-value="snippet.phrase"
+          preview-theme="github"
+          theme="light"
+        />
       </article>
     </section>
   </main>
