@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import logging
 import tempfile
 from pathlib import Path
 
@@ -10,6 +11,8 @@ from markitdown import MarkItDown
 from app.core.settings import get_settings
 from app.domain.models import ProcessingStrategy
 from app.parsers.base import ParsedDocument, StoredFile
+
+logger = logging.getLogger(__name__)
 
 
 class ParserRegistry:
@@ -58,7 +61,7 @@ class ParserRegistry:
         strategy: ProcessingStrategy = ProcessingStrategy.ocr_model,
     ) -> ParsedDocument:
         if self._is_pdf(file):
-            markdown = await asyncio.to_thread(self._ocr_pdf_pages, file)
+            markdown = await self._ocr_pdf_pages(file)
         elif self._is_image(file):
             markdown = await self._ocr_image_bytes(file.content, file.mime_type, file.filename)
         else:
@@ -79,30 +82,77 @@ class ParserRegistry:
             result = self.markitdown.convert(temp_file.name)
             return result.text_content
 
-    def _ocr_pdf_pages(self, file: StoredFile) -> str:
+    async def _ocr_pdf_pages(self, file: StoredFile) -> str:
         with fitz.open(stream=file.content, filetype="pdf") as document:
-            pages: list[str] = []
+            page_count = document.page_count
+            pages: list[str | None] = [None] * page_count
+            pending: set[asyncio.Task[tuple[int, str]]] = set()
+            concurrency = max(1, self.settings.pdf_ocr_concurrency)
 
-            for page_index in range(document.page_count):
-                image_bytes = self._render_pdf_page_to_png(document, page_index)
-                page_markdown = asyncio.run(
-                    self._ocr_image_bytes(
-                        image_bytes,
-                        "image/png",
-                        f"{file.filename} page {page_index + 1}",
+            for page_index in range(page_count):
+                image_bytes, mime_type = self._render_pdf_page_to_image(document, page_index)
+                logger.info(
+                    "Rendered PDF page %s/%s for OCR as %s (%s bytes)",
+                    page_index + 1,
+                    page_count,
+                    mime_type,
+                    len(image_bytes),
+                )
+                pending.add(
+                    asyncio.create_task(
+                        self._ocr_pdf_page(
+                            page_index,
+                            page_count,
+                            image_bytes,
+                            mime_type,
+                            f"{file.filename} page {page_index + 1}",
+                        )
                     )
                 )
-                page_text = page_markdown.strip()
-                if not page_text:
-                    page_text = "_No text could be recognized on this page._"
-                pages.append(f"## Page {page_index + 1}\n\n{page_text}")
 
-        return "\n\n".join(pages)
+                if len(pending) >= concurrency:
+                    await self._collect_finished_pdf_pages(pending, pages)
 
-    def _render_pdf_page_to_png(self, document: fitz.Document, page_index: int) -> bytes:
+            while pending:
+                await self._collect_finished_pdf_pages(pending, pages)
+
+        return "\n\n".join(page for page in pages if page is not None)
+
+    async def _collect_finished_pdf_pages(
+        self,
+        pending: set[asyncio.Task[tuple[int, str]]],
+        pages: list[str | None],
+    ) -> None:
+        done, pending_tasks = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+        pending.clear()
+        pending.update(pending_tasks)
+
+        for task in done:
+            page_index, page_text = await task
+            pages[page_index] = page_text
+
+    async def _ocr_pdf_page(
+        self,
+        page_index: int,
+        page_count: int,
+        image_bytes: bytes,
+        mime_type: str,
+        title: str,
+    ) -> tuple[int, str]:
+        logger.info("Starting OCR for PDF page %s/%s", page_index + 1, page_count)
+        page_markdown = await self._ocr_image_bytes(image_bytes, mime_type, title)
+        page_text = page_markdown.strip()
+        if not page_text:
+            page_text = "_No text could be recognized on this page._"
+
+        logger.info("Finished OCR for PDF page %s/%s", page_index + 1, page_count)
+        return page_index, f"## Page {page_index + 1}\n\n{page_text}"
+
+    def _render_pdf_page_to_image(self, document: fitz.Document, page_index: int) -> tuple[bytes, str]:
         page = document.load_page(page_index)
-        pixmap = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
-        return pixmap.tobytes("png")
+        scale = self.settings.pdf_ocr_render_scale
+        pixmap = page.get_pixmap(matrix=fitz.Matrix(scale, scale), alpha=False)
+        return pixmap.tobytes("jpeg", jpg_quality=self.settings.pdf_ocr_jpeg_quality), "image/jpeg"
 
     async def _ocr_image_bytes(self, content: bytes, mime_type: str, title: str) -> str:
         image_base64 = base64.b64encode(content).decode("ascii")

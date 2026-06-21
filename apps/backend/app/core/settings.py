@@ -29,6 +29,9 @@ class Settings(BaseSettings):
 
     llama_ocr_base_url: str = "http://llama-ocr:8080/v1"
     llama_ocr_model: str = "glm-ocr"
+    pdf_ocr_render_scale: float = 1.25
+    pdf_ocr_jpeg_quality: int = 85
+    pdf_ocr_concurrency: int = 2
 
     llama_embedding_base_url: str = "http://llama-embedding:8080/v1"
     llama_embedding_model: str = "qwen3-embedding"
