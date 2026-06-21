@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import MarkdownIt from 'markdown-it';
+import markdownItKatex from 'markdown-it-katex';
 import Button from 'primevue/button';
 import ProgressSpinner from 'primevue/progressspinner';
 import { computed } from 'vue';
@@ -35,6 +36,9 @@ const markdownRenderer = new MarkdownIt({
   breaks: true,
   html: false,
   linkify: true,
+}).use(markdownItKatex, {
+  throwOnError: false,
+  errorColor: '#b91c1c',
 });
 const renderedMarkdown = computed(() => markdownRenderer.render(markdown.value));
 
