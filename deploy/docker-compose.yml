@@ -95,6 +95,9 @@ services:
       - "/models/mmproj-GLM-OCR-Q8_0.gguf"
       - "--flash-attn"
       - "on"
+      - "--ctx-size"
+      - "4096"
+      
     volumes:
       - ../model:/models:ro
 
@@ -120,6 +123,8 @@ services:
       - "last"
       - "--model"
       - "/models/Qwen3-Embedding-0.6B-Q8_0.gguf"
+      - "--ctx-size"
+      - "4096"
     volumes:
       - ../model:/models:ro
 
