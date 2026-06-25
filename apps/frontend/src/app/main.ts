@@ -12,7 +12,7 @@ import App from './App.vue';
 import { i18n } from '../i18n';
 import { router } from '../router';
 
-const LocaScanPreset = definePreset(Aura, {
+const OpenLocalSearchParserPreset = definePreset(Aura, {
   semantic: {
     primary: {
       50: '#f3f7f9',
@@ -36,7 +36,7 @@ createApp(App)
   .use(i18n)
   .use(PrimeVue, {
     theme: {
-      preset: LocaScanPreset,
+      preset: OpenLocalSearchParserPreset,
       options: {
         darkModeSelector: '.app-dark',
       },

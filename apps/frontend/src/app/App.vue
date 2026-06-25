@@ -17,7 +17,7 @@ const selectedLocale = computed({
 <template>
   <div class="app-shell">
     <header class="top-nav">
-      <RouterLink class="brand" to="/">LocaScanScribe</RouterLink>
+      <RouterLink class="brand" to="/">OpenLocalSearchParser</RouterLink>
       <nav class="main-nav">
         <RouterLink to="/">{{ t('nav.search') }}</RouterLink>
         <RouterLink to="/documents">{{ t('nav.documents') }}</RouterLink>

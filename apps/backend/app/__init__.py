@@ -1,2 +1,2 @@
-"""LocaScan backend package."""
+"""OpenLocalSearchParser backend package."""
 

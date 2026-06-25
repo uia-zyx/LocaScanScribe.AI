@@ -73,7 +73,7 @@ with httpx.Client(timeout=120) as client:
 
 const mcpClientConfigExample = computed(() => `{
   "mcpServers": {
-    "locascan-scribe": {
+    "open-local-search-parser": {
       "url": "${mcpUrl.value}"
     }
   }

@@ -2,7 +2,7 @@ import { createI18n } from 'vue-i18n';
 
 export type Locale = 'en' | 'ru';
 
-const storageKey = 'locascan.locale';
+const storageKey = 'open-local-search-parser.locale';
 
 export const messages = {
   en: {

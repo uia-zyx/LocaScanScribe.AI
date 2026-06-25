@@ -2,7 +2,7 @@ import { computed, ref } from 'vue';
 
 export type UiTheme = 'light' | 'dark';
 
-const storageKey = 'locascan.theme';
+const storageKey = 'open-local-search-parser.theme';
 const selectedTheme = ref<UiTheme>(getInitialTheme());
 
 applyTheme(selectedTheme.value);

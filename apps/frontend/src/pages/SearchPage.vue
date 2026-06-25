@@ -57,7 +57,7 @@ if (query.value) {
 <template>
   <main class="search-page">
     <section class="hero-search">
-      <h1>LocaScanScribe</h1>
+      <h1>OpenLocalSearchParser</h1>
       <form class="search-box" @submit.prevent="submitSearch">
         <InputText v-model="query" class="search-input" :placeholder="t('search.placeholder')" />
         <Button :label="t('search.button')" type="submit" />
