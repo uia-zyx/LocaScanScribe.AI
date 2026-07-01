@@ -1,0 +1,9 @@
+services:
+  backend:
+    image: ${OLSP_IMAGE_BACKEND:-openlocalsearchparser/backend:offline}
+
+  worker:
+    image: ${OLSP_IMAGE_WORKER:-openlocalsearchparser/worker:offline}
+
+  frontend:
+    image: ${OLSP_IMAGE_FRONTEND:-openlocalsearchparser/frontend:offline}

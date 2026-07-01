@@ -7,7 +7,7 @@ services:
       - path: ../.env
         required: false
     ports:
-      - "8000:8000"
+      - "${OLSP_BACKEND_HOST_PORT:-52891}:8000"
     depends_on:
       - postgres
       - qdrant
@@ -37,7 +37,9 @@ services:
     build:
       context: ../apps/frontend
     ports:
-      - "3000:3000"
+      - "${OLSP_FRONTEND_HOST_PORT:-18473}:3000"
+    environment:
+      VITE_BACKEND_HOST_PORT: ${VITE_BACKEND_HOST_PORT:-52891}
     depends_on:
       - backend
 
@@ -53,7 +55,7 @@ services:
   qdrant:
     image: qdrant/qdrant:latest
     ports:
-      - "6333:6333"
+      - "${OLSP_QDRANT_HOST_PORT:-36144}:6333"
     volumes:
       - qdrant_data:/qdrant/storage
 
@@ -67,8 +69,8 @@ services:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio12345
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${OLSP_MINIO_API_HOST_PORT:-49280}:9000"
+      - "${OLSP_MINIO_CONSOLE_HOST_PORT:-49281}:9001"
     volumes:
       - minio_data:/data
 

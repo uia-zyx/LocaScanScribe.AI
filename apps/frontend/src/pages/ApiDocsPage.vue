@@ -4,9 +4,11 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 
+const backendPort = import.meta.env.VITE_BACKEND_HOST_PORT || '52891';
+
 const apiBaseUrl = computed(() => {
   const { hostname, protocol } = window.location;
-  return `${protocol}//${hostname}:8000`;
+  return `${protocol}//${hostname}:${backendPort}`;
 });
 const openWebUiApiKeyEnv = 'OPENWEBUI_WEB_SEARCH_API_KEY';
 const swaggerUrl = computed(() => `${apiBaseUrl.value}/docs`);
@@ -14,7 +16,7 @@ const redocUrl = computed(() => `${apiBaseUrl.value}/redoc`);
 const scalarUrl = computed(() => `${apiBaseUrl.value}/api/reference`);
 const openApiUrl = computed(() => `${apiBaseUrl.value}/openapi.json`);
 const mcpUrl = computed(() => `${apiBaseUrl.value}/mcp`);
-const dockerMcpUrl = 'http://host.docker.internal:8000/mcp';
+const dockerMcpUrl = computed(() => `http://host.docker.internal:${backendPort}/mcp`);
 
 const uploadCurlExample = computed(() => `curl -X POST "${apiBaseUrl.value}/api/documents" \\
   -F "strategy=ocr_model" \\
